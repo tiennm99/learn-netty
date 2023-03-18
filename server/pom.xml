@@ -13,7 +13,7 @@
     <dependency>
       <artifactId>flatbuffers-java</artifactId>
       <groupId>com.google.flatbuffers</groupId>
-      <version>23.3.3</version>
+      <version>1.12.0</version>
     </dependency>
     <dependency>
       <artifactId>netty-all</artifactId>

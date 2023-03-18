@@ -40,12 +40,14 @@
   <import class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy"/>
   <import class="ch.qos.logback.core.ConsoleAppender"/>
 
-  <logger name="com.miti99.netty">
-    <appender-ref ref="Console"/>
-    <appender-ref ref="Info"/>
-  </logger>
+<!--  <logger name="com.miti99.netty">-->
+<!--    <appender-ref ref="Console"/>-->
+<!--    <appender-ref ref="Info"/>-->
+<!--  </logger>-->
 
   <root>
+    <appender-ref ref="Console"/>
+    <appender-ref ref="Info"/>
     <appender-ref ref="Error"/>
   </root>
 
