@@ -1,6 +1,6 @@
 package com.miti99.netty;
 
-import MyGame.Sample.Monster;
+import com.miti99.netty.fbs.Packet;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
@@ -14,8 +14,10 @@ import lombok.extern.slf4j.Slf4j;
 public class WebsocketDecoder extends MessageToMessageDecoder<BinaryWebSocketFrame> {
 
   @Override
-  protected void decode(ChannelHandlerContext channelHandlerContext,
-      BinaryWebSocketFrame binaryWebSocketFrame, List<Object> list) {
+  protected void decode(
+      ChannelHandlerContext channelHandlerContext,
+      BinaryWebSocketFrame binaryWebSocketFrame,
+      List<Object> list) {
     var byteBuf = binaryWebSocketFrame.content();
     byteBuf.retain();
 
@@ -25,8 +27,8 @@ public class WebsocketDecoder extends MessageToMessageDecoder<BinaryWebSocketFra
 
     var byteBuffer = ByteBuffer.wrap(bytes);
 
-    var monster = Monster.getRootAsMonster(byteBuffer);
+    var packet = Packet.getRootAsPacket(byteBuffer);
 
-    list.add(monster);
+    list.add(packet);
   }
 }

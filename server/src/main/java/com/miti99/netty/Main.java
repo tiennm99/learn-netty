@@ -27,29 +27,33 @@ public class Main {
     var childGroup = Epoll.isAvailable() ? new EpollEventLoopGroup() : new NioEventLoopGroup();
 
     val serverBootstrap = new ServerBootstrap();
-    serverBootstrap.group(parentGroup, childGroup).channel(
-            NioServerSocketChannel.class
-        ).handler(new LoggingHandler(LogLevel.DEBUG))
-        .childHandler(new ChannelInitializer<>() {
-
-          @Override
-          protected void initChannel(Channel channel) {
-            channel.pipeline()
-                .addLast(new LoggingHandler(LogLevel.DEBUG))
-                .addLast(new HttpServerCodec())
-                .addLast(new HttpObjectAggregator(65536))
-                .addLast(new WebSocketServerCompressionHandler())
-                .addLast(new WebSocketServerProtocolHandler("/fbs", null, true))
-                .addLast(new WebsocketDecoder())
-                .addLast(new WebsocketHandler());
-          }
-        })
+    serverBootstrap
+        .group(parentGroup, childGroup)
+        .channel(NioServerSocketChannel.class)
+        .handler(new LoggingHandler(LogLevel.DEBUG))
         .childHandler(
             new ChannelInitializer<>() {
 
               @Override
               protected void initChannel(Channel channel) {
-                channel.pipeline()
+                channel
+                    .pipeline()
+                    .addLast(new LoggingHandler(LogLevel.DEBUG))
+                    .addLast(new HttpServerCodec())
+                    .addLast(new HttpObjectAggregator(65536))
+                    .addLast(new WebSocketServerCompressionHandler())
+                    .addLast(new WebSocketServerProtocolHandler("/fbs", null, true))
+                    .addLast(new WebsocketDecoder())
+                    .addLast(new WebsocketHandler());
+              }
+            })
+        .childHandler(
+            new ChannelInitializer<>() {
+
+              @Override
+              protected void initChannel(Channel channel) {
+                channel
+                    .pipeline()
                     .addLast(new LoggingHandler(LogLevel.INFO))
                     .addLast(new HttpServerCodec())
                     .addLast(new HttpObjectAggregator(65536))
@@ -57,8 +61,7 @@ public class Main {
                     .addLast(new WebSocketServerProtocolHandler("/json", null, true))
                     .addLast(new WebsocketHandler());
               }
-            }
-        );
+            });
 
     try {
       val channelFuture = serverBootstrap.bind(1202).sync();

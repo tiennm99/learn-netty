@@ -1,10 +1,15 @@
 package com.miti99.netty;
 
-
-
-import MyGame.Sample.Equipment;
-import MyGame.Sample.Monster;
-import MyGame.Sample.Weapon;
+import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.gson.Gson;
+import com.miti99.netty.fbs.LoginRequest;
+import com.miti99.netty.fbs.LoginResponse;import com.miti99.netty.fbs.Packet;
+import com.miti99.netty.fbs.PacketData;
+import com.miti99.netty.fbs.Player;
+import com.miti99.netty.fbs.Vec2;
+import com.miti99.netty.json.request.BaseJsonRequest;
+import com.miti99.netty.json.request.LoginJsonRequest;
+import com.miti99.netty.json.response.LoginJsonResponse;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -17,44 +22,48 @@ public class WebsocketHandler extends ChannelInboundHandlerAdapter {
 
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg) {
-    if (msg instanceof Monster monster) {
-      var hp = monster.hp();
-      var mana = monster.mana();
-      var name = monster.name();
+    if (msg instanceof Packet packet) {
+      if (packet.dataType() == PacketData.LoginRequest) {
+        var request = new LoginRequest();
+        packet.data(request);
+        var builder = new FlatBufferBuilder(0);
 
-      log.info("hp : {}, mana : {}, name : {}", hp, mana, name);
+        var usernameOffset = builder.createString("user_" + request.userId());
+        Player.startPlayer(builder);
+        Player.addUserId(builder, request.userId());
+        Player.addUserName(builder, usernameOffset);
+        Player.addPosition(builder, Vec2.createVec2(builder, 12, 2));
+        Player.addRotation(builder, 12.02);
+        Player.addTeam(builder, 1999);
+        var playerOffset = Player.endPlayer(builder);
 
-      var pos = monster.pos();
-      var x = pos.x();
-      var y = pos.y();
-      var z = pos.z();
+        var responseOffset = LoginResponse.createLoginResponse(builder, playerOffset);
 
-      log.info("x : {}, y : {}, z : {}", x, y, z);
+        Packet.startPacket(builder);
+        Packet.addDataType(builder, PacketData.LoginResponse);
+        Packet.addData(builder, responseOffset);
+        var packetOffset = Packet.endPacket(builder);
+        builder.finish(packetOffset);
 
-      var invLength = monster.inventoryLength();
-      var thirdItem = monster.inventory(2);
-
-      var weaponsLength = monster.weaponsLength();
-      var secondWeaponName = monster.weapons(1).name();
-      var secondWeaponDamage = monster.weapons(1).damage();
-
-      log.info(
-          "invLength : {}, thirdItem : {}, weaponsLength : {}, secondWeaponName : {}, secondWeaponDamage : {}",
-          invLength, thirdItem, weaponsLength, secondWeaponName, secondWeaponDamage);
-
-      var unionType = monster.equippedType();
-
-      if (unionType == Equipment.Weapon) {
-        var weapon = (Weapon) monster.equipped(new Weapon());
-
-        var weaponName = weapon.name();    // "Axe"
-        var weaponDamage = weapon.damage(); // 5
-
-        log.info("weaponName : {}, weaponDamage : {}", weaponName, weaponDamage);
+        var bytes = builder.dataBuffer();
+        NetworkUtil.sendBinaryResponse(ctx.channel(), bytes);
+      } else {
+        log.warn("unknown packet data type: {}", packet.dataType());
       }
     } else if (msg instanceof TextWebSocketFrame textWebSocketFrame) {
-      log.info(textWebSocketFrame.text());
-    }else {
+      try {
+        BaseJsonRequest request = BaseJsonRequest.fromJson(textWebSocketFrame.text());
+        if (request instanceof LoginJsonRequest loginRequest) {
+          var response =
+              new LoginJsonResponse(loginRequest.getUserId(), "user_" + loginRequest.getUserId());
+          NetworkUtil.sendJsonResponse(ctx.channel(), response);
+        } else {
+          NetworkUtil.sendTextResponse(ctx.channel(), new Gson().toJson(request));
+        }
+      } catch (Exception e) {
+        log.error("can not parse text message: {}", textWebSocketFrame.text(), e);
+      }
+    } else {
       ctx.fireChannelRead(msg);
     }
   }

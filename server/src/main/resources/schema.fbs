@@ -1,0 +1,33 @@
+namespace com.miti99.netty.fbs;
+
+struct Vec2 {
+  x: double;
+  y: double;
+}
+
+table Player {
+  userId: int;
+  userName: string;
+  position: Vec2;
+  rotation: double;
+  team: int;
+}
+
+table LoginRequest {
+  userId: int;
+}
+
+table LoginResponse {
+  player: Player;
+}
+
+union PacketData {
+  LoginRequest,
+  LoginResponse
+}
+
+table Packet {
+  data: PacketData;
+}
+
+root_type Packet;
